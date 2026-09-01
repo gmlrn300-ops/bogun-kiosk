@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>보건실 키오스크 - 스마일 보건</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- SheetJS Library for Excel (.xlsx, .xls, .csv) parsing -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Gmarket+Sans:wght@500;700&family=Noto+Sans+KR:wght@400;500;700&display=swap');
+    
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      background-color: #F8FAFC;
+      color: #0F172A;
+      user-select: none;
+    }
+    
+    .font-title {
+      font-family: 'Gmarket Sans', 'Noto Sans KR', sans-serif;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #F1F5F9;
+      border-radius: 10px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #3B82F6;
+      border-radius: 10px;
+    }
+  </style>
+</head>
+<body class="h-screen w-screen overflow-hidden flex flex-col bg-slate-50 text-slate-900">
+
+  <!-- [상단 헤더] -->
+  <header class="bg-blue-600 text-white shadow-md shrink-0 px-6 py-4 flex justify-between items-center z-10">
+    <div class="flex items-center gap-3">
+      <div class="bg-white text-blue-600 p-2.5 rounded-2xl shadow flex items-center justify-center">
+        <i class="fa-solid fa-heart-pulse text-2xl text-blue-600"></i>
+      </div>
+      <div>
+        <h1 class="text-2xl font-bold font-title tracking-wide text-white">스마일 보건실 키오스크</h1>
+        <p class="text-xs text-blue-100 font-medium">행복하고 건강한 학교생활</p>
+      </div>
+    </div>
+
+    <!-- 우측 상단 교사 관리 버튼 -->
+    <div class="flex items-center gap-2">
+      <button onclick="openTeacherAuthModal()" class="bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold px-3.5 py-2.5 rounded-xl transition flex items-center gap-2 shadow-sm border border-blue-500">
+        <i class="fa-solid fa-user-shield text-amber-300"></i> 교사 관리 (명단 등록)
+      </button>
+    </div>
+  </header>
+
+  <!-- [메인 컨텐츠 영역] -->
+  <main class="flex-1 overflow-y-auto p-4 md:p-6 flex flex-col items-center justify-center relative">
+
+    <!-- 1단계: 서비스 선택 화면 -->
+    <div id="view-step1" class="w-full max-w-4xl flex flex-col items-center justify-center gap-8 my-auto">
+      <div class="text-center space-y-2">
+        <span class="inline-block bg-blue-100 text-blue-700 text-xs font-bold px-4 py-1.5 rounded-full border border-blue-200">
+          STEP 01
+        </span>
+        <h2 class="text-3xl md:text-4xl font-bold font-title text-slate-900">어떤 일로 보건실에 오셨나요?</h2>
+        <p class="text-slate-500 text-sm md:text-base">원하시는 이용 서비스를 아래에서 선택해주세요.</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-3xl">
+        <!-- 버튼 1: 약 / 처치 받기 -->
+        <button onclick="selectCategory('약/처치 받기')" 
+          class="group relative bg-white hover:bg-blue-600 hover:text-white border-4 border-blue-500 rounded-3xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 flex flex-col items-center text-center gap-4">
+          <div class="w-24 h-24 rounded-2xl bg-blue-50 text-blue-600 group-hover:bg-white group-hover:text-blue-600 flex items-center justify-center text-5xl transition-colors shadow-inner">
+            <i class="fa-solid fa-kit-medical"></i>
+          </div>
+          <div>
+            <h3 class="text-2xl font-bold font-title mb-1.5">약 / 처치 받기</h3>
+            <p class="text-sm text-slate-500 group-hover:text-blue-100">아프거나 처치가 필요한 경우<br>(선생님 진료 받기)</p>
+          </div>
+        </button>
+
+        <!-- 버튼 2: 마스크 / 생리대 / 밴드 -->
+        <button onclick="selectCategory('마스크/생리대/밴드')" 
+          class="group relative bg-white hover:bg-emerald-600 hover:text-white border-4 border-emerald-500 rounded-3xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 flex flex-col items-center text-center gap-4">
+          <div class="w-24 h-24 rounded-2xl bg-emerald-50 text-emerald-600 group-hover:bg-white group-hover:text-emerald-600 flex items-center justify-center text-5xl transition-colors shadow-inner">
+            <i class="fa-solid fa-box-tissue"></i>
+          </div>
+          <div>
+            <h3 class="text-2xl font-bold font-title mb-1.5">마스크 / 생리대 / 밴드</h3>
+            <p class="text-sm text-slate-500 group-hover:text-emerald-100">간단한 위생용품 및 밴드가<br>필요한 경우</p>
+          </div>
+          <span class="absolute top-4 right-4 text-xs bg-emerald-100 group-hover:bg-emerald-700 text-emerald-700 group-hover:text-white px-3 py-1 rounded-full font-bold">
+            실시간 기록
+          </span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 2단계: 대상 선택 화면 -->
+    <div id="view-step2" class="w-full max-w-4xl bg-white rounded-3xl shadow-xl border border-slate-200 p-6 md:p-8 hidden flex-col gap-6 my-auto">
+      <!-- 헤더 & 뒤로가기 -->
+      <div class="flex items-center justify-between border-b pb-4 border-slate-100">
+        <button onclick="resetToStep1()" class="flex items-center gap-2 text-slate-600 hover:text-blue-600 font-bold text-sm bg-slate-100 px-4 py-2 rounded-xl transition">
+          <i class="fa-solid fa-arrow-left"></i> 처음으로
+        </button>
+        <div class="text-center">
+          <span id="selected-category-badge" class="bg-blue-100 text-blue-700 text-xs font-bold px-3 py-1 rounded-full">처치 선택됨</span>
+          <h3 class="text-xl font-bold font-title text-slate-800 mt-1">본인을 선택해주세요</h3>
+        </div>
+        <div class="w-20"></div>
+      </div>
+
+      <!-- 네비게이션 탭 (학년 / 교직원) -->
+      <div class="grid grid-cols-4 gap-3 bg-slate-100 p-1.5 rounded-2xl">
+        <button onclick="selectUserType('학생', 1)" id="tab-g1" class="tab-btn py-3 rounded-xl font-bold text-slate-600 transition hover:bg-white shadow-sm">1학년</button>
+        <button onclick="selectUserType('학생', 2)" id="tab-g2" class="tab-btn py-3 rounded-xl font-bold text-slate-600 transition hover:bg-white shadow-sm">2학년</button>
+        <button onclick="selectUserType('학생', 3)" id="tab-g3" class="tab-btn py-3 rounded-xl font-bold text-slate-600 transition hover:bg-white shadow-sm">3학년</button>
+        <button onclick="selectUserType('교직원', 0)" id="tab-staff" class="tab-btn py-3 rounded-xl font-bold text-slate-600 transition hover:bg-white shadow-sm">교직원</button>
+      </div>
+
+      <!-- 반 선택 영역 (학생인 경우) -->
+      <div id="class-selection-container" class="space-y-2">
+        <label class="text-xs font-bold text-slate-500 block"><i class="fa-solid fa-school text-blue-500"></i> 반 선택 (1~15반)</label>
+        <div class="grid grid-cols-5 md:grid-cols-8 gap-2" id="class-grid"></div>
+      </div>
+
+      <!-- 이름 및 번호 선택 영역 -->
+      <div id="name-selection-container" class="space-y-2 hidden">
+        <div class="flex justify-between items-center">
+          <label class="text-xs font-bold text-slate-500 block"><i class="fa-solid fa-user-tag text-blue-500"></i> 이름 선택</label>
+          <span id="sub-info-tag" class="text-xs font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg"></span>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 max-h-60 overflow-y-auto custom-scrollbar p-1" id="name-grid"></div>
+      </div>
+
+      <!-- 마스크/생리대/밴드 선택 하위 영역 -->
+      <div id="item-selection-container" class="mt-4 pt-4 border-t border-slate-100 hidden">
+        <h4 class="text-base font-bold font-title text-center text-emerald-700 mb-4">필요하신 물품을 선택해주세요</h4>
+        <div class="grid grid-cols-3 gap-4">
+          <button onclick="completeItemSelection('마스크')" class="bg-emerald-50 hover:bg-emerald-600 hover:text-white border-2 border-emerald-400 text-emerald-800 rounded-2xl py-6 font-bold flex flex-col items-center gap-2 transition shadow">
+            <i class="fa-solid fa-head-side-mask text-3xl"></i>
+            <span>마스크</span>
+          </button>
+          <button onclick="completeItemSelection('생리대')" class="bg-rose-50 hover:bg-rose-600 hover:text-white border-2 border-rose-400 text-rose-800 rounded-2xl py-6 font-bold flex flex-col items-center gap-2 transition shadow">
+            <i class="fa-solid fa-hand-holding-medical text-3xl"></i>
+            <span>생리대</span>
+          </button>
+          <button onclick="completeItemSelection('밴드')" class="bg-amber-50 hover:bg-amber-600 hover:text-white border-2 border-amber-400 text-amber-800 rounded-2xl py-6 font-bold flex flex-col items-center gap-2 transition shadow">
+            <i class="fa-solid fa-bandage text-3xl"></i>
+            <span>밴드</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 완료 안내 모달 (병원 창구식 TTS 및 안내 메시지) -->
+    <div id="modal-complete" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+      <div class="bg-white rounded-3xl p-8 max-w-lg w-full text-center shadow-2xl flex flex-col items-center gap-6 border border-slate-100">
+        <div class="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center text-blue-600 text-4xl animate-bounce">
+          <i class="fa-solid fa-circle-check text-blue-600"></i>
+        </div>
+        <div class="w-full">
+          <h3 class="text-2xl font-bold font-title text-slate-800 mb-3">접수가 완료되었습니다</h3>
+          <p id="tts-notice-text" class="text-xl font-bold text-blue-600 bg-blue-50/80 p-5 rounded-2xl border border-blue-200 leading-relaxed word-break-all">
+            <!-- 안내 문구 출력 영역 -->
+          </p>
+        </div>
+        <p class="text-xs text-slate-400">잠시 후 메인 화면으로 돌아갑니다...</p>
+        <button onclick="closeModalAndReset()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl transition shadow-lg text-lg">
+          확인
+        </button>
+      </div>
+    </div>
+
+    <!-- [교사 인증 및 명단 관리 모달] -->
+    <div id="modal-teacher-admin" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+      <div class="bg-white rounded-3xl p-6 max-w-xl w-full shadow-2xl flex flex-col gap-5 border border-slate-100">
+        <div class="flex justify-between items-center border-b pb-3">
+          <h3 class="text-lg font-bold font-title text-slate-800 flex items-center gap-2">
+            <i class="fa-solid fa-user-gear text-blue-600"></i> 교사 인증 및 명단 관리
+          </h3>
+          <button onclick="closeTeacherAdminModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold">&times;</button>
+        </div>
+
+        <!-- 인증 전 암호 입력 영역 -->
+        <div id="admin-auth-section" class="flex flex-col items-center gap-4 py-6">
+          <p class="text-sm text-slate-600">교사 비밀번호를 입력해주세요 (기본: <span class="font-bold text-blue-600">1234</span>)</p>
+          <input type="password" id="admin-pin-input" placeholder="비밀번호 입력" class="border-2 border-slate-300 rounded-xl px-4 py-2.5 text-center text-lg font-bold w-48 focus:border-blue-500 outline-none">
+          <button onclick="verifyTeacherPin()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-2.5 rounded-xl transition shadow">
+            인증하기
+          </button>
+        </div>
+
+        <!-- 인증 후 명단 관리 패널 -->
+        <div id="admin-panel-section" class="hidden flex-col gap-5">
+          <!-- 1. Excel/CSV 파일 업로드 -->
+          <div class="bg-slate-50 border border-slate-200 p-4 rounded-2xl space-y-2">
+            <h4 class="font-bold text-sm text-slate-700 flex items-center gap-1.5">
+              <i class="fa-solid fa-file-excel text-emerald-600"></i> 명단 Excel/CSV 업로드
+            </h4>
+            <p class="text-xs text-slate-500">
+              - 학생 양식: <span class="font-bold text-slate-700">학년, 반, 번호, 성명, 성별</span><br>
+              - 교직원 양식: <span class="font-bold text-slate-700">성명, 성별, 직원구분, 학년, 반</span>
+            </p>
+            <input type="file" id="excel-upload-file" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleFileUpload(event)">
+            <button onclick="document.getElementById('excel-upload-file').click()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-sm transition shadow flex items-center justify-center gap-2">
+              <i class="fa-solid fa-upload"></i> 엑셀 파일 선택 및 업로드
+            </button>
+          </div>
+
+          <!-- 2. 명단 수기 직접 추가 -->
+          <div class="bg-blue-50 border border-blue-200 p-4 rounded-2xl space-y-3">
+            <h4 class="font-bold text-sm text-blue-900 flex items-center gap-1.5">
+              <i class="fa-solid fa-user-plus text-blue-600"></i> 인원 수기 직접 추가
+            </h4>
+            
+            <div class="grid grid-cols-2 gap-2 text-xs">
+              <select id="add-type" onchange="toggleAddFields()" class="p-2 border rounded-xl bg-white font-bold">
+                <option value="학생">학생</option>
+                <option value="교직원">교직원</option>
+              </select>
+              <input type="text" id="add-name" placeholder="성명/이름 *" class="p-2 border rounded-xl bg-white">
+            </div>
+
+            <div id="student-add-fields" class="grid grid-cols-3 gap-2 text-xs">
+              <input type="number" id="add-grade" placeholder="학년 (1~3)" min="1" max="3" class="p-2 border rounded-xl bg-white">
+              <input type="number" id="add-class" placeholder="반 (1~15)" min="1" max="15" class="p-2 border rounded-xl bg-white">
+              <input type="number" id="add-num" placeholder="번호" class="p-2 border rounded-xl bg-white">
+            </div>
+
+            <div id="staff-add-fields" class="grid grid-cols-2 gap-2 text-xs hidden">
+              <input type="text" id="add-gender" placeholder="성별 (남/여)" class="p-2 border rounded-xl bg-white">
+              <input type="text" id="add-staff-type" placeholder="직원구분 (교사/행정 등)" class="p-2 border rounded-xl bg-white">
+            </div>
+
+            <button onclick="addPersonManual()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-xl text-sm transition shadow flex items-center justify-center gap-1.5">
+              <i class="fa-solid fa-plus"></i> 인원 등록 (데이터 영구 저장)
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- [FRONTEND JAVASCRIPT] -->
+  <script>
+    // 전역 상태 관리
+    let appState = {
+      category: '',        // '약/처치 받기' 또는 '마스크/생리대/밴드'
+      userType: '학생',     // '학생' 또는 '교직원'
+      grade: 1,            // 1, 2, 3
+      classNum: 0,         // 반 번호
+      selectedUser: null,  // 선택된 사용자 객체
+      selectedItem: ''     // 수령 물품
+    };
+
+    let rosterData = [];
+    let availableVoices = [];
+    let resetTimer = null; // 자동 화면 전환 타이머 참조
+
+    window.onload = function() {
+      loadSavedRoster();
+      fetchInitialData();
+      initTTSVoices();
+    };
+
+    // 데이터 정제 및 중복 제거 함수
+    function sanitizeRoster(data) {
+      if (!Array.isArray(data)) return [];
+      
+      const seen = new Set();
+      const cleaned = [];
+
+      data.forEach(item => {
+        if (!item || !item.name) return;
+
+        // 이름 끝에 붙은 '번' 글자 및 공백 제거
+        let cleanName = String(item.name).trim().replace(/번$/, '').trim();
+        
+        // 예시 이상 데이터 ('정서윤', '강시우', '조지우' 등 이상 포맷 제거 필터링)
+        if (cleanName.includes('정서윤번') || cleanName.includes('강시우번') || cleanName.includes('조지우번')) {
+          return;
+        }
+
+        const type = item.type || '학생';
+        const grade = item.grade || '';
+        const classNum = item.classNum || '';
+        const studentNum = item.studentNum || '';
+
+        // 유니크 키 생성 (중복 등록 방지)
+        const key = `${type}_${grade}_${classNum}_${studentNum}_${cleanName}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          cleaned.push({
+            ...item,
+            name: cleanName,
+            grade: grade,
+            classNum: classNum,
+            studentNum: studentNum
+          });
+        }
+      });
+
+      return cleaned;
+    }
+
+    // 음성 엔진 초기화 (병원/안내 창구 스타일)
+    function initTTSVoices() {
+      if ('speechSynthesis' in window) {
+        const updateVoices = () => {
+          availableVoices = window.speechSynthesis.getVoices();
+        };
+        updateVoices();
+        if (window.speechSynthesis.onvoiceschanged !== undefined) {
+          window.speechSynthesis.onvoiceschanged = updateVoices;
+        }
+      }
+    }
+
+    function loadSavedRoster() {
+      const saved = localStorage.getItem('smile_health_roster');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          rosterData = sanitizeRoster(parsed);
+          saveRosterToLocal();
+        } catch (e) {
+          console.error("Local storage load error:", e);
+        }
+      }
+    }
+
+    function saveRosterToLocal() {
+      rosterData = sanitizeRoster(rosterData);
+      localStorage.setItem('smile_health_roster', JSON.stringify(rosterData));
+    }
+
+    function fetchInitialData() {
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run
+          .withSuccessHandler(data => {
+            if (data && data.roster && data.roster.length > 0) {
+              rosterData = sanitizeRoster(data.roster);
+              saveRosterToLocal();
+            }
+          })
+          .getInitialData();
+      }
+    }
+
+    function selectCategory(category) {
+      appState.category = category;
+      document.getElementById('view-step1').classList.add('hidden');
+      document.getElementById('view-step2').classList.remove('hidden');
+      document.getElementById('view-step2').classList.add('flex');
+
+      const badge = document.getElementById('selected-category-badge');
+      badge.textContent = category;
+      badge.className = category === '약/처치 받기' 
+        ? "bg-blue-100 text-blue-700 text-xs font-bold px-3 py-1 rounded-full"
+        : "bg-emerald-100 text-emerald-700 text-xs font-bold px-3 py-1 rounded-full";
+
+      selectUserType('학생', 1);
+    }
+
+    function resetToStep1() {
+      appState = { category: '', userType: '학생', grade: 1, classNum: 0, selectedUser: null, selectedItem: '' };
+      document.getElementById('view-step2').classList.add('hidden');
+      document.getElementById('view-step2').classList.remove('flex');
+      document.getElementById('view-step1').classList.remove('hidden');
+      document.getElementById('item-selection-container').classList.add('hidden');
+      document.getElementById('name-selection-container').classList.add('hidden');
+    }
+
+    function selectUserType(type, grade) {
+      appState.userType = type;
+      appState.grade = grade;
+      appState.classNum = 0;
+      appState.selectedUser = null;
+
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('bg-blue-600', 'text-white', 'shadow-md');
+        btn.classList.add('text-slate-600');
+      });
+
+      const activeTabId = type === '교직원' ? 'tab-staff' : `tab-g${grade}`;
+      const activeTab = document.getElementById(activeTabId);
+      if (activeTab) {
+        activeTab.classList.add('bg-blue-600', 'text-white', 'shadow-md');
+        activeTab.classList.remove('text-slate-600');
+      }
+
+      const classContainer = document.getElementById('class-selection-container');
+      const nameContainer = document.getElementById('name-selection-container');
+      const itemContainer = document.getElementById('item-selection-container');
+
+      itemContainer.classList.add('hidden');
+      nameContainer.classList.add('hidden');
+
+      if (type === '학생') {
+        classContainer.classList.remove('hidden');
+        renderClassGrid();
+      } else {
+        classContainer.classList.add('hidden');
+        nameContainer.classList.remove('hidden');
+        renderTeacherList();
+      }
+    }
+
+    function renderClassGrid() {
+      const grid = document.getElementById('class-grid');
+      grid.innerHTML = '';
+      for (let c = 1; c <= 15; c++) {
+        const btn = document.createElement('button');
+        btn.id = `class-btn-${c}`;
+        btn.className = `class-btn py-2.5 rounded-xl font-bold border border-slate-200 hover:border-blue-500 hover:text-blue-600 transition text-sm ${c === appState.classNum ? 'bg-blue-50 border-blue-500 text-blue-600 font-extrabold' : 'bg-slate-50 text-slate-700'}`;
+        btn.textContent = `${c}반`;
+        btn.onclick = () => selectClass(c);
+        grid.appendChild(btn);
+      }
+    }
+
+    function selectClass(classNum) {
+      appState.classNum = classNum;
+      document.querySelectorAll('.class-btn').forEach(btn => {
+        btn.classList.remove('bg-blue-50', 'border-blue-500', 'text-blue-600', 'font-extrabold');
+        btn.classList.add('bg-slate-50', 'text-slate-700');
+      });
+      const activeBtn = document.getElementById(`class-btn-${classNum}`);
+      if (activeBtn) activeBtn.classList.add('bg-blue-50', 'border-blue-500', 'text-blue-600', 'font-extrabold');
+
+      document.getElementById('name-selection-container').classList.remove('hidden');
+      renderStudentList();
+    }
+
+    function renderStudentList() {
+      const grid = document.getElementById('name-grid');
+      const subInfo = document.getElementById('sub-info-tag');
+      grid.innerHTML = '';
+      subInfo.textContent = `${appState.grade}학년 ${appState.classNum}반 명단`;
+
+      // 정제 및 중복 제거
+      const cleanedRoster = sanitizeRoster(rosterData);
+      const students = cleanedRoster.filter(item => 
+        item.type === '학생' && Number(item.grade) === Number(appState.grade) && Number(item.classNum) === Number(appState.classNum)
+      );
+
+      if (students.length === 0) {
+        grid.innerHTML = `<div class="col-span-full text-center py-6 text-slate-400 text-sm">등록된 학생 명단이 없습니다.<br>(교사 관리 메뉴에서 명단 업로드/등록)</div>`;
+        return;
+      }
+
+      students.sort((a, b) => (Number(a.studentNum) || 0) - (Number(b.studentNum) || 0));
+
+      students.forEach(student => {
+        const btn = document.createElement('button');
+        btn.className = "p-3 rounded-xl border border-slate-200 bg-white hover:bg-blue-500 hover:text-white font-bold transition text-center shadow-sm flex items-center justify-between px-4 group";
+        
+        const cleanName = student.name.replace(/번$/, '');
+        btn.innerHTML = `
+          <span class="text-xs bg-slate-100 group-hover:bg-blue-600 group-hover:text-white px-2 py-1 rounded-md text-slate-500">${student.studentNum ? student.studentNum + '번' : '-'}</span>
+          <span class="text-base font-bold">${cleanName}</span>
+        `;
+        btn.onclick = () => selectUser(student);
+        grid.appendChild(btn);
+      });
+    }
+
+    function renderTeacherList() {
+      const grid = document.getElementById('name-grid');
+      const subInfo = document.getElementById('sub-info-tag');
+      grid.innerHTML = '';
+      subInfo.textContent = `교직원 명단`;
+
+      const cleanedRoster = sanitizeRoster(rosterData);
+      const teachers = cleanedRoster.filter(item => item.type === '교직원');
+
+      if (teachers.length === 0) {
+        grid.innerHTML = `<div class="col-span-full text-center py-6 text-slate-400 text-sm">등록된 교직원 명단이 없습니다.</div>`;
+        return;
+      }
+
+      teachers.forEach(teacher => {
+        const btn = document.createElement('button');
+        btn.className = "p-3 rounded-xl border border-slate-200 bg-white hover:bg-blue-500 hover:text-white font-bold transition text-center shadow-sm flex items-center justify-between px-4";
+        btn.innerHTML = `
+          <span class="text-xs text-slate-400">${teacher.staffType || '교직원'}</span>
+          <span class="text-base font-bold">${teacher.name}</span>
+        `;
+        btn.onclick = () => selectUser(teacher);
+        grid.appendChild(btn);
+      });
+    }
+
+    function selectUser(user) {
+      appState.selectedUser = user;
+
+      if (appState.category === '약/처치 받기') {
+        submitRecord();
+      } else {
+        document.getElementById('item-selection-container').classList.remove('hidden');
+        document.getElementById('item-selection-container').scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+
+    function completeItemSelection(item) {
+      appState.selectedItem = item;
+      submitRecord();
+    }
+
+    function submitRecord() {
+      const payload = {
+        category: appState.category,
+        type: appState.selectedUser.type,
+        grade: appState.selectedUser.grade,
+        classNum: appState.selectedUser.classNum,
+        studentNum: appState.selectedUser.studentNum,
+        name: appState.selectedUser.name,
+        item: appState.selectedItem
+      };
+
+      // 백엔드로 서버 응답을 기다리지 않고 비동기(배경 작업)로 즉시 전송
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run
+          .withFailureHandler(err => console.error("서버 기록 중 오류 발생:", err))
+          .appendLogRecord(payload);
+      } else {
+        console.log("로컬 테스트 전송:", payload);
+      }
+
+      // 서버 응답 지연 시간 없이 1초 이내 초고속 화면 전환 처리
+      onRecordSubmitted();
+    }
+
+    function onRecordSubmitted() {
+      const name = appState.selectedUser ? appState.selectedUser.name : '';
+      const isStaff = (appState.selectedUser && appState.selectedUser.type === '교직원') || appState.userType === '교직원';
+
+      if (resetTimer) clearTimeout(resetTimer);
+
+      // [마스크/생리대/밴드 수령]: 즉시 완료 멘트 표시 후 1초 이내(0.85초) 메인 화면 복귀
+      if (appState.category !== '약/처치 받기') {
+        const item = appState.selectedItem || '위생용품';
+        const noticeMsg = `${name}님, ${item} 수령 접수가 완료되었습니다.`;
+        
+        document.getElementById('tts-notice-text').textContent = noticeMsg;
+        document.getElementById('modal-complete').classList.remove('hidden');
+
+        // 0.85초 후 1단계 메인 화면으로 빠르게 자동 전환
+        resetTimer = setTimeout(() => {
+          closeModalAndReset();
+        }, 850);
+        return;
+      }
+
+      // [약/처치 받기]: 음성 안내 및 빠른 모달 전환
+      let ttsMessage = isStaff 
+        ? `${name} 선생님은 보건교사에게 와주세요.` 
+        : `${name} 학생은 문진표 작성 후 선생님께 오세요.`;
+
+      speakText(ttsMessage);
+      document.getElementById('tts-notice-text').textContent = ttsMessage;
+      document.getElementById('modal-complete').classList.remove('hidden');
+
+      resetTimer = setTimeout(() => {
+        closeModalAndReset();
+      }, 3000);
+    }
+
+    // 자연스럽고 높은 톤의 병원 창구 스타일 TTS
+    function speakText(text) {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        
+        const speech = new SpeechSynthesisUtterance(text);
+        if (availableVoices.length === 0) availableVoices = window.speechSynthesis.getVoices();
+        
+        const koreanVoice = availableVoices.find(voice => 
+          voice.lang.includes('ko') && (voice.name.includes('Google') || voice.name.includes('Yuna') || voice.name.includes('Sun-Hi') || voice.name.includes('Natural'))
+        ) || availableVoices.find(voice => voice.lang.includes('ko'));
+
+        if (koreanVoice) speech.voice = koreanVoice;
+
+        speech.lang = 'ko-KR';
+        speech.pitch = 1.35;
+        speech.rate = 0.95;
+        speech.volume = 1.0;
+
+        window.speechSynthesis.speak(speech);
+      }
+    }
+
+    function closeModalAndReset() {
+      if (resetTimer) clearTimeout(resetTimer);
+      document.getElementById('modal-complete').classList.add('hidden');
+      resetToStep1();
+    }
+
+    function openTeacherAuthModal() {
+      document.getElementById('modal-teacher-admin').classList.remove('hidden');
+      document.getElementById('admin-auth-section').classList.remove('hidden');
+      document.getElementById('admin-panel-section').classList.add('hidden');
+      document.getElementById('admin-pin-input').value = '';
+    }
+
+    function closeTeacherAdminModal() {
+      document.getElementById('modal-teacher-admin').classList.add('hidden');
+    }
+
+    function verifyTeacherPin() {
+      const pin = document.getElementById('admin-pin-input').value;
+      if (pin === "1234") {
+        document.getElementById('admin-auth-section').classList.add('hidden');
+        document.getElementById('admin-panel-section').classList.remove('hidden');
+        document.getElementById('admin-panel-section').classList.add('flex');
+      } else {
+        alert("비밀번호가 일치하지 않습니다. (기본 비밀번호: 1234)");
+      }
+    }
+
+    function toggleAddFields() {
+      const type = document.getElementById('add-type').value;
+      if (type === '학생') {
+        document.getElementById('student-add-fields').classList.remove('hidden');
+        document.getElementById('staff-add-fields').classList.add('hidden');
+      } else {
+        document.getElementById('student-add-fields').classList.add('hidden');
+        document.getElementById('staff-add-fields').classList.remove('hidden');
+      }
+    }
+
+    function addPersonManual() {
+      const type = document.getElementById('add-type').value;
+      const name = document.getElementById('add-name').value.trim();
+
+      if (!name) {
+        alert("성명을 입력해주세요.");
+        return;
+      }
+
+      let personObj = { type: type, name: name };
+
+      if (type === '학생') {
+        personObj.grade = Number(document.getElementById('add-grade').value) || 1;
+        personObj.classNum = Number(document.getElementById('add-class').value) || 1;
+        personObj.studentNum = Number(document.getElementById('add-num').value) || 1;
+      } else {
+        personObj.gender = document.getElementById('add-gender').value.trim();
+        personObj.staffType = document.getElementById('add-staff-type').value.trim() || '교직원';
+      }
+
+      rosterData.push(personObj);
+      saveRosterToLocal();
+
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run.addSinglePerson(personObj);
+      }
+
+      alert(`${name}님(${type})이 명단에 등록되었습니다!`);
+      document.getElementById('add-name').value = '';
+
+      if (appState.userType === '학생' && appState.classNum > 0) renderStudentList();
+      if (appState.userType === '교직원') renderTeacherList();
+    }
+
+    function handleFileUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+          const jsonRows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+          const parsed = [];
+
+          jsonRows.forEach((row, idx) => {
+            if (!row || row.length === 0) return;
+
+            const col0 = String(row[0] || '').trim();
+            const col1 = String(row[1] || '').trim();
+
+            if (col0.includes('학년') || col0.includes('성명') || col0.includes('구분') || col1.includes('성별')) return;
+
+            const gradeNum = Number(col0);
+            if (!isNaN(gradeNum) && gradeNum >= 1 && gradeNum <= 6) {
+              const classNum = Number(row[1]) || 1;
+              const studentNum = Number(row[2]) || 1;
+              const rawName = String(row[3] || '').trim();
+              const cleanName = rawName.replace(/번$/, '').trim();
+              const gender = String(row[4] || '').trim();
+
+              if (cleanName) {
+                parsed.push({
+                  type: '학생',
+                  grade: gradeNum,
+                  classNum: classNum,
+                  studentNum: studentNum,
+                  name: cleanName,
+                  gender: gender
+                });
+              }
+            } 
+            else if (col0 && isNaN(Number(col0))) {
+              const rawName = col0;
+              const cleanName = rawName.replace(/번$/, '').trim();
+              const gender = String(row[1] || '').trim();
+              const staffType = String(row[2] || '교직원').trim();
+              const grade = row[3] !== undefined ? row[3] : '';
+              const classNum = row[4] !== undefined ? row[4] : '';
+
+              if (cleanName) {
+                parsed.push({
+                  type: '교직원',
+                  name: cleanName,
+                  gender: gender,
+                  staffType: staffType,
+                  grade: grade,
+                  classNum: classNum
+                });
+              }
+            }
+          });
+
+          if (parsed.length > 0) {
+            rosterData = sanitizeRoster(rosterData.concat(parsed));
+            saveRosterToLocal();
+
+            if (typeof google !== 'undefined' && google.script && google.script.run) {
+              google.script.run
+                .withSuccessHandler(() => alert(`${parsed.length}명의 명단이 성공적으로 스마일 보건 구글 시트에 업로드되었습니다.`))
+                .uploadRosterData(parsed);
+            } else {
+              alert(`${parsed.length}명의 명단이 성공적으로 업로드 및 저장되었습니다!`);
+            }
+
+            if (appState.userType === '학생' && appState.classNum > 0) renderStudentList();
+            if (appState.userType === '교직원') renderTeacherList();
+          } else {
+            alert("명단 파싱에 실패했습니다. 올바른 양식인지 확인해주세요.");
+          }
+        } catch (err) {
+          console.error("파일 처리 오류:", err);
+          alert("파일을 읽는 중 오류가 발생했습니다.");
+        }
+      };
+
+      reader.readAsArrayBuffer(file);
+      event.target.value = '';
+    }
+  </script>
+</body>
+</html>
